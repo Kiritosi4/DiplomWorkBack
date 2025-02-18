@@ -4,6 +4,7 @@ using DiplomWork.DTO;
 using DiplomWork.WebApi.Validators;
 using DiplomWork.Application.Services;
 using DiplomWork.WebApi.Extensions;
+using DiplomWork.Models;
 
 namespace DiplomWork.WebApi.Controllers
 {
@@ -48,19 +49,24 @@ namespace DiplomWork.WebApi.Controllers
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<IActionResult> EditBudget(Guid id, [FromBody]AddBudgetDTO budget)
+        public async Task<ActionResult<BudgetDTO?>> EditBudget(Guid id, [FromBody]AddBudgetDTO budget)
         {
             var validator = new AddBudgetValidator();
             if (!validator.Validate(budget).IsValid)
             {
-                return BadRequest();
+                return BadRequest("Ошибка валидации");
             }
 
             var userId = this.GetClaimsUserId(User).Value;
 
-            await _BudgetService.EditBudget(id, budget, userId);
-
-            return Ok();
+            try
+            {
+                return Ok(await _BudgetService.EditBudget(id, budget, userId));
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id:guid}")]
@@ -71,6 +77,21 @@ namespace DiplomWork.WebApi.Controllers
             await _BudgetService.DeleteBudget(id, userId);
 
             return Ok();
+        }
+
+        [HttpGet("{id:guid}/expenses")]
+        public async Task<ActionResult<EntityListDTO<Expense>>> GetBudgetExpenses(Guid id, int offset = 0, int limit = 10)
+        {
+            var userId = this.GetClaimsUserId(User).Value;
+
+            try
+            {
+                return Ok(await _BudgetService.GetBudgetExpenses(userId, id, offset, Math.Min(10, limit)));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

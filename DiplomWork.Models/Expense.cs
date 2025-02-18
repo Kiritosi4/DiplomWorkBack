@@ -1,5 +1,5 @@
 ﻿using DiplomWork.DTO;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace DiplomWork.Models
 {
@@ -10,7 +10,10 @@ namespace DiplomWork.Models
         public decimal Amount { get; set; }
         public long CreatedAt { get; set; }
         public Guid? CategoryId { get; set; }
+        [JsonIgnore]
+        public ExpenseCategory? Category { get; set; }
         public Guid? BudgetId { get; set; }
+        [JsonIgnore]
         public Budget? Budget { get; set; }
     }
 

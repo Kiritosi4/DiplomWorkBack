@@ -4,17 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DiplomWork.Persistance.Configs
 {
-    internal class TargetConfig : IEntityTypeConfiguration<Target>
+    internal class ProfitCategoryConfig : IEntityTypeConfiguration<ProfitCategory>
     {
-        public void Configure(EntityTypeBuilder<Target> builder)
+        public void Configure(EntityTypeBuilder<ProfitCategory> builder)
         {
             builder.HasKey(x => x.Id);
 
             builder.HasMany(x => x.Profits)
-                .WithOne(x => x.Target)
-                .HasForeignKey(x => x.TargetId)
+                .WithOne(x => x.Category)
+                .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
         }
     }
-
 }

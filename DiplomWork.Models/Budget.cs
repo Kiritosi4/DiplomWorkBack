@@ -14,40 +14,60 @@ namespace DiplomWork.Models
 
         public BudgetDTO ConvertToDTO()
         {
-            var minTimestamp = GetPeriodTimestamp(PeriodType);
+            var minTimestamp = GetStartOfPeriod(PeriodType);
+            var maxTimestamp = GetEndOfPeriod(PeriodType);
             return new BudgetDTO
             {
                 Id = Id,
                 Name = Name,
                 Limit = Limit,
-                Amount = Expenses == null ? 0 : Expenses.Where(x => x.CreatedAt > minTimestamp).Sum(x => x.Amount)
+                Amount = Expenses == null ? 0 : Expenses.Where(x => x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp).Sum(x => x.Amount),
+                PeriodType = (short)PeriodType,
             };
         }
 
-        public static long GetPeriodTimestamp(Period period)
+        public static long GetStartOfPeriod(Period period)
         {
-            var day = DateTimeOffset.UtcNow.Day;
-            var month = DateTimeOffset.UtcNow.Month;
-            var year = DateTimeOffset.UtcNow.Year;
-            long offset = 0;
+            var now = DateTime.Now;
 
             switch (period)
             {
                 case Period.Week:
                     var dayOfWeek = (int)DateTimeOffset.UtcNow.DayOfWeek;
                     dayOfWeek = dayOfWeek == 0 ? 6 : dayOfWeek - 1;
-                    offset = 86400 * dayOfWeek;
-                    break;
+                    long offset = 86400 * dayOfWeek;
+                    return new DateTimeOffset(now).ToUnixTimeSeconds() - offset;
                 case Period.Month:
-                    day = 1;
-                    break;
+                    return new DateTimeOffset(new DateTime(now.Year, now.Month, 1)).ToUnixTimeSeconds();
                 case Period.Year:
-                    day = 1;
-                    month = 1;
-                    break;
+                    return new DateTimeOffset(new DateTime(now.Year, 1, 1)).ToUnixTimeSeconds();
             }
 
-            return new DateTimeOffset(new DateTime(year, month, day)).ToUnixTimeSeconds() - offset;
+            return 0;
         }
+
+        public static long GetEndOfPeriod(Period period)
+        {
+            DateTime now = DateTime.Now;
+
+            switch (period)
+            {
+                case Period.Day:
+                    return new DateTimeOffset(now.Date.AddDays(1)).ToUnixTimeSeconds();
+
+                case Period.Week:
+                    int daysUntilNextMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
+                    return new DateTimeOffset(now.Date.AddDays(daysUntilNextMonday).AddHours(0)).ToUnixTimeSeconds();
+
+                case Period.Month:
+                    return new DateTimeOffset(new DateTime(now.Year, now.Month, 1).AddMonths(1)).ToUnixTimeSeconds();
+
+                case Period.Year:
+                    return new DateTimeOffset(new DateTime(now.Year + 1, 1, 1)).ToUnixTimeSeconds();
+            }
+
+            return 0;
+        }
+
     }
 }

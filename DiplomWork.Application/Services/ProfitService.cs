@@ -56,7 +56,14 @@ namespace DiplomWork.Application.Services
 
             if(categories != null && categories.Count > 0)
             {
-                query = query.Where(x => categories.Contains(x.CategoryId));
+                if (categories.Any(x => x.Value == Guid.Empty))
+                {
+                    query = query.Where(x => categories.Contains(x.CategoryId) || x.CategoryId == null);
+                }
+                else
+                {
+                    query = query.Where(x => categories.Contains(x.CategoryId));
+                }
             }
 
             if(minTimestamp > 0 && maxTimestamp > 0)

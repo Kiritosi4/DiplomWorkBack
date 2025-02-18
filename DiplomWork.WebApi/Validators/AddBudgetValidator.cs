@@ -7,7 +7,7 @@ namespace DiplomWork.WebApi.Validators
     {
         public AddTargetValidator()
         {
-            RuleFor(x => x.Name).NotNull().NotEmpty();
+            RuleFor(x => x.Name).NotNull().NotEmpty().Length(1, 32);
             RuleFor(x => x.Limit).GreaterThan(0);
         }
     }

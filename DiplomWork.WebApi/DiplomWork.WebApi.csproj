@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DiplomWork.DTO\DiplomWork.DTO.csproj" />
     <ProjectReference Include="..\DiplomWork.Application\DiplomWork.Application.csproj" />
     <ProjectReference Include="..\DiplomWork.Models\DiplomWork.Models.csproj" />
     <ProjectReference Include="..\DiplomWork.Persistance\DiplomWork.Persistance.csproj" />

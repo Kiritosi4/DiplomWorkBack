@@ -53,6 +53,8 @@ namespace DiplomWork.Application.Services
             var total = await query.CountAsync();
 
             var targets = await query
+                .Skip(offset)
+                .Take(limit)
                 .Include(x => x.Profits)
                 .Select(x => x.ConvertToDTO())
                 .ToArrayAsync();

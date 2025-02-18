@@ -21,7 +21,7 @@ namespace DiplomWork.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ExpensesListDTO> GetExpenses(int offset, int limit, string? orderBy, string? order, long? minTimestamp, long? maxTimestamp, List<Guid?>? categories)
+        public async Task<ExpensesListDTO> GetExpenses(int offset, int limit, string? orderBy, string? order, long? minTimestamp, long? maxTimestamp, [FromQuery]Guid?[] categories = null, bool emptyCategory = false)
         {
             var userId = this.GetClaimsUserId(User).Value;
 
@@ -68,6 +68,14 @@ namespace DiplomWork.WebApi.Controllers
             await _expensesService.DeleteExpenseById(id);
 
             return Ok();
+        }
+
+        [HttpGet("dashboard")]
+        public async Task<ExpensesDashboardDTO> GetExpensesDashboard(long minTimestamp, long maxTimestamp, [FromQuery] Guid?[] categories = null)
+        {
+            var userId = this.GetClaimsUserId(User).Value;
+
+            return await _expensesService.GetDashboardData(userId, minTimestamp, maxTimestamp, categories);
         }
     }
 }
