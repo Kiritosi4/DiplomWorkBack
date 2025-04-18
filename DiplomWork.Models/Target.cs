@@ -1,6 +1,4 @@
-﻿
-
-using DiplomWork.DTO;
+﻿using DiplomWork.DTO;
 
 namespace DiplomWork.Models
 {
@@ -9,8 +7,9 @@ namespace DiplomWork.Models
         public Guid Id { get; set; }
         public string Name { get; set; }
         public decimal Limit { get; set; }
+        public decimal Amount { get; set; }
         public Guid OwnerId { get; set; }
-        public List<Profit>? Profits { get; set; }
+        public bool Closed { get; set; }
 
         public TargetDTO ConvertToDTO()
         {
@@ -19,7 +18,8 @@ namespace DiplomWork.Models
                 Id = Id,
                 Name = Name,
                 Limit = Limit,
-                Amount = Profits == null ? 0 : Profits.Sum(f => f.Amount),
+                Amount = Amount,
+                Closed = Closed
             };
         }
     }

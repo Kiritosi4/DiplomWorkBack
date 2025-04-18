@@ -7,7 +7,7 @@ namespace DiplomWork.WebApi.Validators
     {
         public AddCategoryValidator()
         {
-            RuleFor(x => x.Name).NotNull().Length(1, 128);
+            RuleFor(x => x.Name).NotNull().Length(1, 32);
         }
     }
 }

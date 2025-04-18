@@ -10,7 +10,7 @@ namespace DiplomWork.WebApi.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("api/profit/category")]
+    [Route("api/profits/category")]
     public class ProfitCategoryController : ControllerBase
     {
         readonly ProfitCategoryService _profitCategoryService;

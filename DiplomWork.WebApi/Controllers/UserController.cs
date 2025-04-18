@@ -1,4 +1,5 @@
 ﻿using DiplomWork.Application.Services;
+using DiplomWork.DTO;
 using DiplomWork.Models;
 using DiplomWork.WebApi.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -20,16 +21,24 @@ namespace DiplomWork.WebApi.Controllers
 
 
         [HttpGet("me")]
-        public async Task<User> Me()
+        public async Task<UserDTO> Me()
         {
             var userId = this.GetClaimsUserId(User).Value;
-            return await _userService.GetUserById(userId);
+            var user = await _userService.GetUserById(userId);
+            return user.ConvertToDTO();
         }
 
         [HttpGet("logout")]
         public async Task Logout()
         {
             Response.Cookies.Delete("Auth");
+        }
+
+        [HttpGet("summary-amount")]
+        public async Task<decimal> GetSummaryAmount()
+        {
+            var userId = this.GetClaimsUserId(User).Value;
+            return await _userService.GetSummaryAmount(userId);
         }
     }
 }

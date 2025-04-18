@@ -6,9 +6,7 @@ namespace DiplomWork.Persistance
 {
     public class DiplomWorkDbContext : DbContext
     {
-        public DiplomWorkDbContext(DbContextOptions options) : base(options)
-        {
-        }
+        public DiplomWorkDbContext(DbContextOptions options) : base(options) {}
 
         public DbSet<User> Users { get; set; }
         public DbSet<Expense> Expenses { get; set; }
@@ -17,7 +15,6 @@ namespace DiplomWork.Persistance
         public DbSet<ProfitCategory> ProfitCategories { get; set; }
         public DbSet<Budget> Budgets { get; set; }
         public DbSet<Target> Targets { get; set; }
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

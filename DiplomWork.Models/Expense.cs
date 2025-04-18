@@ -20,5 +20,6 @@ namespace DiplomWork.Models
     public class ExpensesListDTO : EntityListDTO<Expense>
     {
         public ExpenseCategory[] Categories { get; set; }
+        public BudgetDTO[]? Budgets { get; set; }
     }
 }

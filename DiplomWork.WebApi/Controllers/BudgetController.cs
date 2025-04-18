@@ -21,15 +21,15 @@ namespace DiplomWork.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<EntityListDTO<BudgetDTO>> GetCategories(int offset, int limit = 25)
+        public async Task<BudgetListDTO> GetBudgets(int offset, int limit = 25, int timezone = 0)
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            return await _BudgetService.GetUserBudgetDTOList(userId, offset, Math.Min(limit, 100));
+            return await _BudgetService.GetUserBudgetDTOList(userId, offset, Math.Min(limit, 100), timezone);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddBudget([FromBody]AddBudgetDTO budget)
+        public async Task<ActionResult<Budget?>> AddBudget([FromBody]AddBudgetDTO budget)
         {
             var validator = new AddBudgetValidator();
             if(!validator.Validate(budget).IsValid)
@@ -61,7 +61,7 @@ namespace DiplomWork.WebApi.Controllers
 
             try
             {
-                return Ok(await _BudgetService.EditBudget(id, budget, userId));
+                return Ok(await _BudgetService.EditBudget(id, budget, userId, budget.TimezoneOffset));
             }
             catch(Exception ex)
             {

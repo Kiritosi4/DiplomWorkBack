@@ -39,9 +39,14 @@ namespace DiplomWork.WebApi.Controllers
 
             var userId = this.GetClaimsUserId(User).Value;
 
-            var newCategory = await _expenseCategoryService.AddExpenseCategory(category, userId);
-
-            return Ok(newCategory);
+            try
+            {
+                var newCategory = await _expenseCategoryService.AddExpenseCategory(category, userId);
+                return Ok(newCategory);
+            }
+            catch(Exception ex){
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("{id:guid}")]
@@ -55,9 +60,17 @@ namespace DiplomWork.WebApi.Controllers
 
             var userId = this.GetClaimsUserId(User).Value;
 
-            await _expenseCategoryService.EditExpenseCategory(id, category, userId);
+            try
+            {
+                await _expenseCategoryService.EditExpenseCategory(id, category, userId);
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
         }
 
         [HttpDelete("{id:guid}")]

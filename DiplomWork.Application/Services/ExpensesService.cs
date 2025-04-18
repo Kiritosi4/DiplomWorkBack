@@ -1,7 +1,7 @@
-﻿using DiplomWork.Models;
+﻿using DiplomWork.DTO;
+using DiplomWork.Models;
 using DiplomWork.Persistance;
 using Microsoft.EntityFrameworkCore;
-using DiplomWork.DTO;
 using System.Linq.Expressions;
 
 namespace DiplomWork.Application.Services
@@ -27,7 +27,7 @@ namespace DiplomWork.Application.Services
                 OwnerId = userId
             };
             await _db.Expenses.AddAsync(newExpense);
-            await _db.SaveChangesAsync();   
+            await _db.SaveChangesAsync();
 
             return newExpense;
         }
@@ -48,13 +48,13 @@ namespace DiplomWork.Application.Services
                 .SetProperty(x => x.CategoryId, editedExpense.CategoryId));
         }
 
-        public async Task<ExpensesListDTO> GetUserExpenses(Guid userId, int offset = 0, int limit = 10, string orderBy = "CreatedAt", string order = "desc", long? minTimestamp = 0, long? maxTimestamp = 0, Guid?[] categories = null, bool emptyCategory = false)
+        public async Task<ExpensesListDTO> GetUserExpenses(Guid userId, int offset = 0, int limit = 10, string orderBy = "CreatedAt", string order = "desc", long? minTimestamp = 0, long? maxTimestamp = 0, Guid?[] categories = null, int timeZoneOffset = 0)
         {
             var query = _db.Expenses
                 .AsNoTracking()
                 .Where(x => x.OwnerId == userId);
 
-            if(categories != null && categories.Length > 0)
+            if (categories != null && categories.Length > 0)
             {
                 if (categories.Any(x => x.Value == Guid.Empty))
                 {
@@ -66,7 +66,7 @@ namespace DiplomWork.Application.Services
                 }
             }
 
-            if(minTimestamp > 0 && maxTimestamp > 0)
+            if (minTimestamp != 0 || maxTimestamp != 0)
             {
                 query = query.Where(x => x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp);
             }
@@ -92,39 +92,31 @@ namespace DiplomWork.Application.Services
             }
 
             var expenses = await query.ToArrayAsync();
+
             var categoryIds = expenses.Select(x => x.CategoryId).ToArray();
             var includedCategories = await _db.ExpenseCategories.Where(x => categoryIds.Contains(x.Id)).ToArrayAsync();
+
+            var budgetIds = expenses.Select(x => x.BudgetId).ToArray();
+
+            var includedBudgets = await _db.Budgets
+                .Where(x => budgetIds.Contains(x.Id))
+                .Include(x => x.Expenses)
+                .Select(x => x.ConvertToDTO(timeZoneOffset))
+                .ToArrayAsync();
 
             return new ExpensesListDTO
             {
                 Data = expenses,
                 Categories = includedCategories,
+                Budgets = includedBudgets,
                 Total = total
             };
         }
 
-        static Func<TObject, TKey> BuildKeySelector<TObject, TKey>(string propertyName)
-        {
-            return obj =>
-            {
-                var prop = typeof(TObject).GetProperty(propertyName, typeof(TKey));
-                return (TKey)prop.GetValue(obj);
-            };
-        }
-
-        public async Task<ExpensesDashboardDTO> GetDashboardData(Guid userId, long minTimestamp, long maxTimestamp, Guid?[] categories = null)
+        public async Task<ExpenseDashboardDTO> GetDashboardData(Guid userId, long minTimestamp, long maxTimestamp, Guid?[] categories = null, int timezoneOffset = 0)
         {
             // Подготовка временных отрезков
             var diff = maxTimestamp - minTimestamp;
-            long timeSegment = 86400;
-            if(timeSegment > 5184000)
-            {
-                timeSegment = 2592000;
-            }
-            else if(timeSegment > 61758000)
-            {
-                timeSegment = 30879000;
-            }
 
             var chartSeriesDict = new Dictionary<long, decimal>();
 
@@ -133,8 +125,9 @@ namespace DiplomWork.Application.Services
             var includedCategories = new List<ExpenseCategory>();
 
             // Общая статистика
-            decimal totalAmount = 0;
-            var totalOperations = 0;
+            decimal totalAmount = 0M;
+            decimal lastTotalAmount = 0M;
+            int lastTotalOperations = 0;
 
             var query = _db.Expenses.AsNoTracking().Where(x => x.OwnerId == userId);
             if (categories != null && categories.Length > 0)
@@ -149,61 +142,140 @@ namespace DiplomWork.Application.Services
                 }
             }
 
-            var query2 = query.Where(x => x.CreatedAt > minTimestamp - diff && x.CreatedAt < maxTimestamp - diff);
+            // Обработка наличия периода
+            if (minTimestamp != 0 && maxTimestamp != 0 && maxTimestamp > minTimestamp)
+            {
+                query = query.Where(x => x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp);
+
+                // Запрос для статы за прошлый период
+                var query2 = query.Where(x => x.CreatedAt > minTimestamp - diff && x.CreatedAt < maxTimestamp - diff);
+
+                try
+                {
+                    lastTotalAmount = await query2.SumAsync(x => x.Amount);
+                }
+                catch (OverflowException)
+                {
+                    lastTotalAmount = decimal.MaxValue;
+                }
+
+                try
+                {
+                    lastTotalOperations = await query2.CountAsync();
+                }
+                catch (OverflowException)
+                {
+                    lastTotalOperations = int.MaxValue;
+                }
+            }
+
             query = query
-                .Where(x => x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp)
                 .Include(x => x.Category)
                 .OrderBy(x => x.CreatedAt);
 
-            await query.ForEachAsync(expense =>
+            var expenses = await query.ToArrayAsync();
+            if (expenses.Length == 0)
+            {
+                return new ExpenseDashboardDTO
+                {
+                    ChartData = [],
+                    PieChartData = sumByCategoryId,
+                    Categories = includedCategories
+                };
+            }
+
+            long realMinTimestamp = expenses.First().CreatedAt;
+            long realMaxTimestamp = expenses.Last().CreatedAt;
+            long timeSegment = realMaxTimestamp - realMinTimestamp;
+            var chartLabelFormat = "dd.MM.yyyy";
+
+            if (timeSegment > 5184000 && timeSegment <= 61758000)
+            {
+                timeSegment = 2592000;
+                chartLabelFormat = "MM.yyyy";
+            }
+            else if (timeSegment > 61758000)
+            {
+                timeSegment = 30879000;
+                chartLabelFormat = "yyyy";
+            }
+            else
+            {
+                timeSegment = 86400;
+            }
+
+            foreach (var expense in expenses)
             {
                 // Заполнение по временным отрезкам
-                var segmentAmount = (expense.CreatedAt - minTimestamp) / timeSegment;
-                var mySegment = minTimestamp + timeSegment * segmentAmount;
+                var segmentId = (expense.CreatedAt - realMinTimestamp) / timeSegment;
+                var mySegment = realMinTimestamp + timeSegment * segmentId;
                 if (chartSeriesDict.ContainsKey(mySegment))
                 {
-                    chartSeriesDict[mySegment] += expense.Amount;
+                    try
+                    {
+                        chartSeriesDict[mySegment] += expense.Amount;
+                    }
+                    catch (OverflowException)
+                    {
+                        chartSeriesDict[mySegment] = decimal.MaxValue;
+                    }
+
                 }
                 else
                 {
                     chartSeriesDict.Add(mySegment, expense.Amount);
                 }
 
-                // Заполнение распределения по категориям
+                // Заполнение распределения по категориям (для круговой диаграммы)
                 var myCategoryId = expense.CategoryId == null ? Guid.Empty : expense.CategoryId;
                 if (sumByCategoryId.ContainsKey(myCategoryId.Value))
                 {
-                    sumByCategoryId[myCategoryId.Value] += expense.Amount;
+                    try
+                    {
+                        sumByCategoryId[myCategoryId.Value] += expense.Amount;
+                    }
+                    catch (OverflowException)
+                    {
+                        sumByCategoryId[myCategoryId.Value] = decimal.MaxValue;
+                    }
                 }
                 else
                 {
                     sumByCategoryId.Add(myCategoryId.Value, expense.Amount);
                 }
 
+                // Добавление в ответ информации о категории расхода
                 if (expense.Category != null)
                 {
                     includedCategories.Add(expense.Category);
                 }
 
-                totalAmount += expense.Amount;
-                totalOperations++;
-            });
+                try
+                {
+                    totalAmount += expense.Amount;
+                }
+                catch (OverflowException)
+                {
+                    totalAmount = decimal.MaxValue;
+                }
+
+            }
 
             var chartSegments = chartSeriesDict.Select(kv => new ChartSegment
             {
-                x = DateTimeOffset.FromUnixTimeSeconds(kv.Key).DateTime.ToString("dd.MM.yyyy"),
+                x = DateTimeOffset.FromUnixTimeSeconds(kv.Key + timezoneOffset * 3600).DateTime.ToString(chartLabelFormat),
                 y = kv.Value,
             })
             .ToArray();
 
-            return new ExpensesDashboardDTO
+            return new ExpenseDashboardDTO
             {
-                TotalOperations = totalOperations,
+                TotalOperations = expenses.Length,
                 TotalAmount = totalAmount,
                 ChartData = chartSegments,
                 PieChartData = sumByCategoryId,
-                LastTotalAmount = await query2.SumAsync(x => x.Amount),
-                LastTotalOperations = await query2.CountAsync(),
+                LastTotalAmount = lastTotalAmount,
+                LastTotalOperations = lastTotalOperations,
                 Categories = includedCategories
             };
         }

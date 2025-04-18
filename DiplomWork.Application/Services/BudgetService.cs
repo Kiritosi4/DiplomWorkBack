@@ -20,7 +20,7 @@ namespace DiplomWork.Application.Services
             var period = (Period)addBudgetDTO.PeriodType;
             if (addBudgetDTO.Category != null && await _db.Budgets.AnyAsync(x => x.OwnerId == userId && x.CategoryId == addBudgetDTO.Category))
             {
-                throw new Exception("Бюджет на выбранную категорию и период уже существует.");
+                throw new Exception("Бюджет на выбранную категорию уже существует.");
             }
 
             var newBudget = new Budget
@@ -30,7 +30,9 @@ namespace DiplomWork.Application.Services
                 Limit = addBudgetDTO.Limit,
                 Name = addBudgetDTO.Name,
                 OwnerId = userId,
-                PeriodType = period
+                PeriodType = period,
+                StartPeriod = addBudgetDTO.StartPeriod,
+                EndPeriod = addBudgetDTO.EndPeriod
             };
 
             await _db.Budgets.AddAsync(newBudget);
@@ -44,7 +46,7 @@ namespace DiplomWork.Application.Services
             await _db.Budgets.Where(x => x.Id == budgetId && x.OwnerId == userId).ExecuteDeleteAsync();
         }
 
-        public async Task<BudgetDTO?> EditBudget(Guid budgetId, AddBudgetDTO editedBudget, Guid userId)
+        public async Task<BudgetDTO?> EditBudget(Guid budgetId, AddBudgetDTO editedBudget, Guid userId, int timezone = 0)
         {
             if (editedBudget.Category != null && await _db.Budgets.AnyAsync(x => x.Id != budgetId && x.OwnerId == userId && x.CategoryId == editedBudget.Category))
             {
@@ -57,16 +59,20 @@ namespace DiplomWork.Application.Services
                 .SetProperty(x => x.Name, editedBudget.Name)
                 .SetProperty(x => x.CategoryId, editedBudget.Category)
                 .SetProperty(x => x.PeriodType, (Period)editedBudget.PeriodType)
-                .SetProperty(x => x.Limit, editedBudget.Limit));
+                .SetProperty(x => x.Limit, editedBudget.Limit)
+                .SetProperty(x => x.StartPeriod, editedBudget.StartPeriod)
+                .SetProperty(x => x.EndPeriod, editedBudget.EndPeriod)
+                );
+
 
             return await _db.Budgets
                 .Where(x => x.Id == budgetId && x.OwnerId == userId)
                 .Include(x => x.Expenses)
-                .Select(x => x.ConvertToDTO())
+                .Select(x => x.ConvertToDTO(timezone))
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<EntityListDTO<BudgetDTO>> GetUserBudgetDTOList(Guid userId, int offset = 0, int limit = 25)
+        public async Task<BudgetListDTO> GetUserBudgetDTOList(Guid userId, int offset = 0, int limit = 25, int timezone = 0)
         {
             var query = _db.Budgets
                 .AsNoTracking()
@@ -76,7 +82,7 @@ namespace DiplomWork.Application.Services
 
             var budgets = await query
                 .Include(x => x.Expenses)
-                .Select(x => x.ConvertToDTO())
+                .Select(x => x.ConvertToDTO(timezone))
                 .ToArrayAsync();
 
             var filteredBudgets = budgets
@@ -85,10 +91,14 @@ namespace DiplomWork.Application.Services
                 .Take(limit)
                 .ToArray();
 
-            return new EntityListDTO<BudgetDTO>
+            var categoryIds = filteredBudgets.Select(x => x.CategoryId).ToArray();
+            var incluidedCategories = await _db.ExpenseCategories.Where(x => categoryIds.Contains(x.Id)).ToArrayAsync();
+
+            return new BudgetListDTO
             {
                 Data = filteredBudgets,
-                Total = total
+                Total = total,
+                Categories = incluidedCategories
             };
         }
 
@@ -100,14 +110,27 @@ namespace DiplomWork.Application.Services
                 throw new Exception("Бюджет не найден");
             }
 
-            var minTimestamp = Budget.GetStartOfPeriod(budget.PeriodType);
-            var maxTimestamp = Budget.GetEndOfPeriod(budget.PeriodType);
+            var minTimestamp = budget.StartPeriod;
+            var maxTimestamp = budget.EndPeriod;
+            if(budget.PeriodType != Period.Custom)
+            {
+                minTimestamp = Budget.GetStartOfPeriod(budget.PeriodType);
+                minTimestamp = Budget.GetEndOfPeriod(budget.PeriodType);
+            }
 
             var query = _db.Expenses
                 .AsNoTracking()
-                .Where(x => x.OwnerId == userId && x.BudgetId == budgetId && x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp);
+                .Where(x => x.OwnerId == userId && x.BudgetId == budgetId && x.CreatedAt >= minTimestamp && x.CreatedAt < maxTimestamp);
 
-            var total = await query.CountAsync();
+            int total = 0;
+            try
+            {
+                total = await query.CountAsync();
+            }
+            catch (OverflowException)
+            {
+                total = int.MaxValue;
+            }
 
             query = query
                 .Skip(offset)

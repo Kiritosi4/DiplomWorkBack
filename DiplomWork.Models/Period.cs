@@ -7,6 +7,7 @@ namespace DiplomWork.Models
         Day, 
         Week,
         Month,
-        Year
+        Year,
+        Custom
     }
 }

@@ -14,9 +14,6 @@ namespace DiplomWork.Models
         [JsonIgnore]
         [ForeignKey("CategoryId")]
         public ProfitCategory? Category { get; set; }
-        public Guid? TargetId { get; set; }
-        [JsonIgnore]
-        public Target? Target { get; set; }
 
     }
 

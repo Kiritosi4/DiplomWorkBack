@@ -36,26 +36,41 @@ namespace DiplomWork.Application.Services
             await _db.Targets.Where(x => x.Id == TargetId && x.OwnerId == userId).ExecuteDeleteAsync();
         }
 
-        public async Task EditTarget(Guid TargetId, AddTargetDTO editedTarget, Guid userId)
+        public async Task<TargetDTO?> EditTarget(Guid TargetId, AddTargetDTO editedTarget, Guid userId)
         {
             await _db.Targets
                 .Where(x => x.Id == TargetId && x.OwnerId == userId)
                 .ExecuteUpdateAsync(x => x
-                .SetProperty(x => x.Name, editedTarget.Name));
+                .SetProperty(x => x.Name, editedTarget.Name)
+                .SetProperty(x => x.Amount, editedTarget.Amount)
+                .SetProperty(x => x.Limit, editedTarget.Limit));
+
+            return await _db.Targets
+                .Where(x => x.Id == TargetId && x.OwnerId == userId)
+                .Select(x => x.ConvertToDTO())
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<EntityListDTO<TargetDTO>> GetUserTargetsList(Guid userId, int offset = 0, int limit = 25)
+        public async Task<EntityListDTO<TargetDTO>> GetUserTargetsList(Guid userId, int offset = 0, int limit = 25, string? filter = "all")
         {
             var query = _db.Targets
                 .AsNoTracking()
                 .Where(x => x.OwnerId == userId);
+
+            if(filter == "closed")
+            {
+                query = query.Where(x => x.Closed);
+            }
+            else if (filter == "opened")
+            {
+                query = query.Where(x => !x.Closed);
+            }
 
             var total = await query.CountAsync();
 
             var targets = await query
                 .Skip(offset)
                 .Take(limit)
-                .Include(x => x.Profits)
                 .Select(x => x.ConvertToDTO())
                 .ToArrayAsync();
 

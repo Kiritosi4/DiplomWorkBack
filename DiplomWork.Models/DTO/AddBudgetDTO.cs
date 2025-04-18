@@ -8,5 +8,9 @@ namespace DiplomWork.DTO
         public Guid? Category { get; set; }
         public decimal Limit { get; set; }
         public int? PeriodType { get; set; }
+        public int TimezoneOffset { get; set; } = 0;
+
+        public long StartPeriod { get; set; } = 0;
+        public long EndPeriod { get; set; } = 0;
     }
 }

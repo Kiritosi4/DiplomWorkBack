@@ -27,5 +27,31 @@ namespace DiplomWork.Application.Services
         {
             return await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);    
         }
+
+        public async Task<decimal> GetSummaryAmount(Guid userId)
+        {
+            decimal profitsSum = 0M;
+            decimal expensesSum = 0M;
+
+            try
+            {
+                profitsSum = await _db.Profits.Where(x => x.OwnerId == userId).SumAsync(x => x.Amount);
+            }
+            catch (OverflowException)
+            {
+                profitsSum = decimal.MaxValue;
+            }
+
+            try 
+            {
+                expensesSum = await _db.Expenses.Where(x => x.OwnerId == userId).SumAsync(x => x.Amount);
+            }
+            catch (OverflowException)
+            {
+                profitsSum = decimal.MaxValue;
+            }
+
+            return profitsSum - expensesSum;
+        }
     }
 }

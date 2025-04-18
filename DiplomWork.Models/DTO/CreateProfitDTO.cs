@@ -7,6 +7,5 @@ namespace DiplomWork.DTO
         public Guid? CategoryId { get; set; }
         public decimal Amount { get; set; }
         public long Timestamp { get; set; }
-        public Guid? TargetId { get; set; }
     }
 }

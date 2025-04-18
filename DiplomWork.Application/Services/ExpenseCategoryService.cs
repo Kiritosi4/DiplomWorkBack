@@ -47,6 +47,11 @@ namespace DiplomWork.Application.Services
 
         public async Task EditExpenseCategory(Guid categoryId, AddCategoryDTO editedCategory, Guid userId)
         {
+            if (await _db.ExpenseCategories.AnyAsync(x => x.OwnerID == userId && x.Name == editedCategory.Name))
+            {
+                throw new Exception("Категория с таким названием уже сущетвует.");
+            }
+
             await _db.ExpenseCategories
                 .Where(x => x.Id == categoryId && x.OwnerID == userId)
                 .ExecuteUpdateAsync(x => x

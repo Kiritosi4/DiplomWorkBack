@@ -4,6 +4,7 @@ using DiplomWork.DTO;
 using DiplomWork.WebApi.Validators;
 using DiplomWork.Application.Services;
 using DiplomWork.WebApi.Extensions;
+using DiplomWork.Models;
 
 namespace DiplomWork.WebApi.Controllers
 {
@@ -12,23 +13,23 @@ namespace DiplomWork.WebApi.Controllers
     [Route("api/targets")]
     public class TargetController : ControllerBase
     {
-        readonly TargetService _TargetService;
+        readonly TargetService _targetService;
 
         public TargetController(TargetService TargetService)
         {
-            _TargetService = TargetService;
+            _targetService = TargetService;
         }
 
         [HttpGet]
-        public async Task<EntityListDTO<TargetDTO>> GetCategories(int offset, int limit = 25)
+        public async Task<EntityListDTO<TargetDTO>> GetTargets(int offset, int limit = 25, string? filter = "all")
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            return await _TargetService.GetUserTargetsList(userId, offset, Math.Min(limit, 100));
+            return await _targetService.GetUserTargetsList(userId, offset, Math.Min(limit, 100), filter);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddTarget([FromBody]AddTargetDTO Target)
+        public async Task<ActionResult<Target?>> AddTarget([FromBody]AddTargetDTO Target)
         {
             var validator = new AddTargetValidator();
             if(!validator.Validate(Target).IsValid)
@@ -38,13 +39,13 @@ namespace DiplomWork.WebApi.Controllers
 
             var userId = this.GetClaimsUserId(User).Value;
 
-            var newTarget = await _TargetService.AddTarget(Target, userId);
+            var newTarget = await _targetService.AddTarget(Target, userId);
 
             return Ok(newTarget);
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<IActionResult> EditTarget(Guid id, [FromBody]AddTargetDTO Target)
+        public async Task<ActionResult<TargetDTO?>> EditTarget(Guid id, [FromBody]AddTargetDTO Target)
         {
             var validator = new AddTargetValidator();
             if (!validator.Validate(Target).IsValid)
@@ -54,9 +55,8 @@ namespace DiplomWork.WebApi.Controllers
 
             var userId = this.GetClaimsUserId(User).Value;
 
-            await _TargetService.EditTarget(id, Target, userId);
 
-            return Ok();
+            return Ok(await _targetService.EditTarget(id, Target, userId));
         }
 
         [HttpDelete("{id:guid}")]
@@ -64,7 +64,7 @@ namespace DiplomWork.WebApi.Controllers
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            await _TargetService.DeleteTarget(id, userId);
+            await _targetService.DeleteTarget(id, userId);
 
             return Ok();
         }

@@ -21,11 +21,11 @@ namespace DiplomWork.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ExpensesListDTO> GetExpenses(int offset, int limit, string? orderBy, string? order, long? minTimestamp, long? maxTimestamp, [FromQuery]Guid?[] categories = null, bool emptyCategory = false)
+        public async Task<ExpensesListDTO> GetExpenses(int offset, int limit, string? orderBy, string? order, long? minTimestamp, long? maxTimestamp, [FromQuery]Guid?[] categories = null, int timezone = 0)
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            return await _expensesService.GetUserExpenses(userId, offset, Math.Min(limit, 100), orderBy, order, minTimestamp, maxTimestamp, categories);
+            return await _expensesService.GetUserExpenses(userId, offset, Math.Min(limit, 100), orderBy, order, minTimestamp, maxTimestamp, categories, timezone);
         }
 
         [HttpPost]
@@ -71,11 +71,11 @@ namespace DiplomWork.WebApi.Controllers
         }
 
         [HttpGet("dashboard")]
-        public async Task<ExpensesDashboardDTO> GetExpensesDashboard(long minTimestamp, long maxTimestamp, [FromQuery] Guid?[] categories = null)
+        public async Task<ExpenseDashboardDTO> GetExpensesDashboard(long minTimestamp, long maxTimestamp, [FromQuery] Guid?[] categories = null, int timezoneOffset = 0)
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            return await _expensesService.GetDashboardData(userId, minTimestamp, maxTimestamp, categories);
+            return await _expensesService.GetDashboardData(userId, minTimestamp, maxTimestamp, categories, timezoneOffset);
         }
     }
 }
