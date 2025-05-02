@@ -2,6 +2,7 @@
 using DiplomWork.Models;
 using DiplomWork.Persistance;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace DiplomWork.Application.Services
 {
@@ -18,7 +19,7 @@ namespace DiplomWork.Application.Services
         public async Task<Budget> AddBudget(AddBudgetDTO addBudgetDTO, Guid userId)
         {
             var period = (Period)addBudgetDTO.PeriodType;
-            if (addBudgetDTO.Category != null && await _db.Budgets.AnyAsync(x => x.OwnerId == userId && x.CategoryId == addBudgetDTO.Category))
+            if (addBudgetDTO.CategoryId != null && await _db.Budgets.AnyAsync(x => x.OwnerId == userId && x.CategoryId == addBudgetDTO.CategoryId))
             {
                 throw new Exception("Бюджет на выбранную категорию уже существует.");
             }
@@ -26,7 +27,7 @@ namespace DiplomWork.Application.Services
             var newBudget = new Budget
             {
                 Id = Guid.NewGuid(),
-                CategoryId = addBudgetDTO.Category,
+                CategoryId = addBudgetDTO.CategoryId,
                 Limit = addBudgetDTO.Limit,
                 Name = addBudgetDTO.Name,
                 OwnerId = userId,
@@ -48,7 +49,7 @@ namespace DiplomWork.Application.Services
 
         public async Task<BudgetDTO?> EditBudget(Guid budgetId, AddBudgetDTO editedBudget, Guid userId, int timezone = 0)
         {
-            if (editedBudget.Category != null && await _db.Budgets.AnyAsync(x => x.Id != budgetId && x.OwnerId == userId && x.CategoryId == editedBudget.Category))
+            if (editedBudget.CategoryId != null && await _db.Budgets.AnyAsync(x => x.Id != budgetId && x.OwnerId == userId && x.CategoryId == editedBudget.CategoryId))
             {
                 throw new Exception("Бюджет на выбранную категорию уже существует.");
             }
@@ -57,7 +58,7 @@ namespace DiplomWork.Application.Services
                 .Where(x => x.Id == budgetId && x.OwnerId == userId)
                 .ExecuteUpdateAsync(x => x
                 .SetProperty(x => x.Name, editedBudget.Name)
-                .SetProperty(x => x.CategoryId, editedBudget.Category)
+                .SetProperty(x => x.CategoryId, editedBudget.CategoryId)
                 .SetProperty(x => x.PeriodType, (Period)editedBudget.PeriodType)
                 .SetProperty(x => x.Limit, editedBudget.Limit)
                 .SetProperty(x => x.StartPeriod, editedBudget.StartPeriod)
@@ -102,7 +103,7 @@ namespace DiplomWork.Application.Services
             };
         }
 
-        public async Task<ExpensesListDTO> GetBudgetExpenses(Guid userId, Guid budgetId, int offset = 0, int limit = 10)
+        public async Task<ExpensesListDTO> GetBudgetExpenses(Guid userId, Guid budgetId, int offset = 0, int limit = 10, int timezone = 0)
         {
             var budget = await _db.Budgets.AsNoTracking().FirstOrDefaultAsync(x => x.Id == budgetId && x.OwnerId == userId);
             if (budget == null)
@@ -114,8 +115,8 @@ namespace DiplomWork.Application.Services
             var maxTimestamp = budget.EndPeriod;
             if(budget.PeriodType != Period.Custom)
             {
-                minTimestamp = Budget.GetStartOfPeriod(budget.PeriodType);
-                minTimestamp = Budget.GetEndOfPeriod(budget.PeriodType);
+                minTimestamp = Budget.GetStartOfPeriod(budget.PeriodType, timezone);
+                minTimestamp = Budget.GetEndOfPeriod(budget.PeriodType, timezone);
             }
 
             var query = _db.Expenses
@@ -146,6 +147,16 @@ namespace DiplomWork.Application.Services
                 Categories = includedCategories,
                 Total = total
             };
+        }
+
+        public async Task<BudgetDTO?> GetBudgetByCategory(Guid categoryId, Guid userId, int timezone = 0)
+        {
+            return await _db.Budgets
+                .AsNoTracking()
+                .Where(x => x.OwnerId == userId && x.CategoryId == categoryId)
+                .Include(x => x.Expenses)
+                .Select(x => x.ConvertToDTO(timezone))
+                .FirstOrDefaultAsync();
         }
     }
 }

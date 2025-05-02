@@ -14,6 +14,11 @@ namespace DiplomWork.Persistance.Configs
                 .WithOne(x => x.Category)
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            builder.HasOne(x => x.Budget)
+                .WithOne(x => x.Category)
+                .HasForeignKey<Budget>(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

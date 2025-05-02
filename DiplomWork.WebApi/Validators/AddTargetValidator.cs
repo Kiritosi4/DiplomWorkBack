@@ -13,7 +13,7 @@ namespace DiplomWork.WebApi.Validators
             RuleFor(x => x.Limit).GreaterThan(0).LessThanOrEqualTo(100000000000000);
             RuleFor(x => x.Limit.Scale).LessThanOrEqualTo(MAX_MANTISS);
 
-            RuleFor(x => x.Amount).GreaterThan(0).LessThanOrEqualTo(100000000000000);
+            RuleFor(x => x.Amount).GreaterThanOrEqualTo(0).LessThanOrEqualTo(100000000000000);
             RuleFor(x => x.Amount.Scale).LessThanOrEqualTo(MAX_MANTISS);
         }
     }

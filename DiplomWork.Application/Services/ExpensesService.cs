@@ -126,8 +126,8 @@ namespace DiplomWork.Application.Services
 
             // Общая статистика
             decimal totalAmount = 0M;
-            decimal lastTotalAmount = 0M;
-            int lastTotalOperations = 0;
+            //decimal lastTotalAmount = 0M;
+            //int lastTotalOperations = 0;
 
             var query = _db.Expenses.AsNoTracking().Where(x => x.OwnerId == userId);
             if (categories != null && categories.Length > 0)
@@ -147,7 +147,7 @@ namespace DiplomWork.Application.Services
             {
                 query = query.Where(x => x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp);
 
-                // Запрос для статы за прошлый период
+                /*
                 var query2 = query.Where(x => x.CreatedAt > minTimestamp - diff && x.CreatedAt < maxTimestamp - diff);
 
                 try
@@ -167,6 +167,7 @@ namespace DiplomWork.Application.Services
                 {
                     lastTotalOperations = int.MaxValue;
                 }
+                */
             }
 
             query = query
@@ -274,8 +275,6 @@ namespace DiplomWork.Application.Services
                 TotalAmount = totalAmount,
                 ChartData = chartSegments,
                 PieChartData = sumByCategoryId,
-                LastTotalAmount = lastTotalAmount,
-                LastTotalOperations = lastTotalOperations,
                 Categories = includedCategories
             };
         }

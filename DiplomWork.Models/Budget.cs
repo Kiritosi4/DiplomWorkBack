@@ -8,6 +8,7 @@ namespace DiplomWork.Models
         public string Name { get; set; }
         public decimal Limit { get; set; }
         public Guid? CategoryId { get; set; }
+        public ExpenseCategory? Category { get; set; }
         public Guid OwnerId { get; set; }
         public Period PeriodType { get; set; }
         public long StartPeriod { get; set; }

@@ -13,11 +13,11 @@ namespace DiplomWork.WebApi.Controllers
     [Route("api/budgets")]
     public class BudgetController : ControllerBase
     {
-        readonly BudgetService _BudgetService;
+        readonly BudgetService _budgetService;
 
         public BudgetController(BudgetService BudgetService)
         {
-            _BudgetService = BudgetService;
+            _budgetService = BudgetService;
         }
 
         [HttpGet]
@@ -25,7 +25,7 @@ namespace DiplomWork.WebApi.Controllers
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            return await _BudgetService.GetUserBudgetDTOList(userId, offset, Math.Min(limit, 100), timezone);
+            return await _budgetService.GetUserBudgetDTOList(userId, offset, Math.Min(limit, 100), timezone);
         }
 
         [HttpPost]
@@ -34,13 +34,13 @@ namespace DiplomWork.WebApi.Controllers
             var validator = new AddBudgetValidator();
             if(!validator.Validate(budget).IsValid)
             {
-                return BadRequest();
+                return BadRequest("Ошибка валидации");
             }
 
             var userId = this.GetClaimsUserId(User).Value;
             try
             {
-                var newBudget = await _BudgetService.AddBudget(budget, userId);
+                var newBudget = await _budgetService.AddBudget(budget, userId);
                 return Ok(newBudget);
             }catch (Exception ex)
             {
@@ -61,7 +61,7 @@ namespace DiplomWork.WebApi.Controllers
 
             try
             {
-                return Ok(await _BudgetService.EditBudget(id, budget, userId, budget.TimezoneOffset));
+                return Ok(await _budgetService.EditBudget(id, budget, userId, budget.TimezoneOffset));
             }
             catch(Exception ex)
             {
@@ -74,24 +74,31 @@ namespace DiplomWork.WebApi.Controllers
         {
             var userId = this.GetClaimsUserId(User).Value;
 
-            await _BudgetService.DeleteBudget(id, userId);
+            await _budgetService.DeleteBudget(id, userId);
 
             return Ok();
         }
 
         [HttpGet("{id:guid}/expenses")]
-        public async Task<ActionResult<EntityListDTO<Expense>>> GetBudgetExpenses(Guid id, int offset = 0, int limit = 10)
+        public async Task<ActionResult<EntityListDTO<Expense>>> GetBudgetExpenses(Guid id, int offset = 0, int limit = 10, int timezone = 0)
         {
             var userId = this.GetClaimsUserId(User).Value;
 
             try
             {
-                return Ok(await _BudgetService.GetBudgetExpenses(userId, id, offset, Math.Min(10, limit)));
+                return Ok(await _budgetService.GetBudgetExpenses(userId, id, offset, Math.Min(10, limit), timezone));
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpGet("bycategory/{id:guid}")]
+        public async Task<BudgetDTO?> GetBudgetByCategory(Guid id, int timezone = 0)
+        {
+            var userId = this.GetClaimsUserId(User).Value;
+            return await _budgetService.GetBudgetByCategory(id, userId, timezone);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace DiplomWork.WebApi.Controllers
             var validator = new CreateExpenseDTOValidator();
             if(!validator.Validate(expense).IsValid)
             {
-                return BadRequest();
+                return BadRequest("Ошибка валидации");
             }
 
             var userId = this.GetClaimsUserId(User).Value;

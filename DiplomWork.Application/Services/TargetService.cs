@@ -43,7 +43,9 @@ namespace DiplomWork.Application.Services
                 .ExecuteUpdateAsync(x => x
                 .SetProperty(x => x.Name, editedTarget.Name)
                 .SetProperty(x => x.Amount, editedTarget.Amount)
-                .SetProperty(x => x.Limit, editedTarget.Limit));
+                .SetProperty(x => x.Limit, editedTarget.Limit)
+                .SetProperty(x => x.Closed, editedTarget.Closed)
+                );
 
             return await _db.Targets
                 .Where(x => x.Id == TargetId && x.OwnerId == userId)

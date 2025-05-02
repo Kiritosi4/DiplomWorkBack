@@ -3,6 +3,7 @@ using System;
 using DiplomWork.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DiplomWork.Persistance.Migrations
 {
     [DbContext(typeof(DiplomWorkDbContext))]
-    partial class DiplomWorkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250420101358_init322")]
+    partial class init322
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,8 +59,6 @@ namespace DiplomWork.Persistance.Migrations
                     b.HasIndex("CategoryId")
                         .IsUnique();
 
-                    b.HasIndex("OwnerId");
-
                     b.ToTable("Budgets");
                 });
 
@@ -88,8 +89,6 @@ namespace DiplomWork.Persistance.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("OwnerId");
-
                     b.ToTable("Expenses");
                 });
 
@@ -107,8 +106,6 @@ namespace DiplomWork.Persistance.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OwnerID");
 
                     b.ToTable("ExpenseCategories");
                 });
@@ -135,8 +132,6 @@ namespace DiplomWork.Persistance.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("OwnerId");
-
                     b.ToTable("Profits");
                 });
 
@@ -154,8 +149,6 @@ namespace DiplomWork.Persistance.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OwnerID");
 
                     b.ToTable("ProfitCategories");
                 });
@@ -183,8 +176,6 @@ namespace DiplomWork.Persistance.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
 
                     b.ToTable("Targets");
                 });
@@ -219,12 +210,6 @@ namespace DiplomWork.Persistance.Migrations
                         .HasForeignKey("DiplomWork.Models.Budget", "CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("DiplomWork.Models.User", null)
-                        .WithMany("Budgets")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Category");
                 });
 
@@ -240,22 +225,9 @@ namespace DiplomWork.Persistance.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("DiplomWork.Models.User", null)
-                        .WithMany("Expenses")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Budget");
 
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("DiplomWork.Models.ExpenseCategory", b =>
-                {
-                    b.HasOne("DiplomWork.Models.User", null)
-                        .WithMany("ExpenseCategories")
-                        .HasForeignKey("OwnerID");
                 });
 
             modelBuilder.Entity("DiplomWork.Models.Profit", b =>
@@ -265,29 +237,7 @@ namespace DiplomWork.Persistance.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("DiplomWork.Models.User", null)
-                        .WithMany("Profits")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("DiplomWork.Models.ProfitCategory", b =>
-                {
-                    b.HasOne("DiplomWork.Models.User", null)
-                        .WithMany("ProfitCategories")
-                        .HasForeignKey("OwnerID");
-                });
-
-            modelBuilder.Entity("DiplomWork.Models.Target", b =>
-                {
-                    b.HasOne("DiplomWork.Models.User", null)
-                        .WithMany("Targets")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("DiplomWork.Models.Budget", b =>
@@ -305,21 +255,6 @@ namespace DiplomWork.Persistance.Migrations
             modelBuilder.Entity("DiplomWork.Models.ProfitCategory", b =>
                 {
                     b.Navigation("Profits");
-                });
-
-            modelBuilder.Entity("DiplomWork.Models.User", b =>
-                {
-                    b.Navigation("Budgets");
-
-                    b.Navigation("ExpenseCategories");
-
-                    b.Navigation("Expenses");
-
-                    b.Navigation("ProfitCategories");
-
-                    b.Navigation("Profits");
-
-                    b.Navigation("Targets");
                 });
 #pragma warning restore 612, 618
         }

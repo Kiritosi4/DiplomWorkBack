@@ -9,5 +9,7 @@ namespace DiplomWork.Models
         public Guid? OwnerID { get; set; }
         [JsonIgnore]
         public List<Expense>? Expenses { get; set; }
+        [JsonIgnore]
+        public Budget? Budget { get; set; }
     }
 }

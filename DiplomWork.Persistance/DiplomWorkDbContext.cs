@@ -29,6 +29,7 @@ namespace DiplomWork.Persistance
             modelBuilder.ApplyConfiguration(new TargetConfig());
             modelBuilder.ApplyConfiguration(new ExpenseCategoryConfig());
             modelBuilder.ApplyConfiguration(new ProfitCategoryConfig());
+            modelBuilder.ApplyConfiguration(new UserConfig());
 
             base.OnModelCreating(modelBuilder);
         }
