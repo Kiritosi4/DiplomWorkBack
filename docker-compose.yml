@@ -29,13 +29,13 @@ services:
      ports:
        - "5432:5432"
   
-  #front:
-    #image: ${DOCKER_REGISTRY-}diplomworkfront
-    #build:
-      #context: ../DiplomWorkFront
-      #dockerfile: Dockerfile
-    #ports:
-      #- "4173:4173"
+  front:
+    image: ${DOCKER_REGISTRY-}diplomworkfront
+    build:
+      context: ../DiplomWorkFront
+      dockerfile: Dockerfile
+    ports:
+      - "4173:4173"
 
 volumes:
   postgres-data:
