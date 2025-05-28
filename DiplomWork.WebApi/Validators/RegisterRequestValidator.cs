@@ -7,8 +7,8 @@ namespace DiplomWork.WebApi.Validators
     {
         public RegisterRequestValidator()
         {
-            RuleFor(x => x.Name).NotEmpty().MinimumLength(2);
-            RuleFor(x => x.Password).NotEmpty().MinimumLength(8);
+            RuleFor(x => x.Name).NotEmpty().MinimumLength(2).MaximumLength(128);
+            RuleFor(x => x.Password).NotEmpty().MinimumLength(8).MaximumLength(128);
             RuleFor(x => x.Email).NotEmpty().EmailAddress();
         }
     }

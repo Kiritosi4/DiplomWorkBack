@@ -116,7 +116,7 @@ namespace DiplomWork.Application.Services
             if(budget.PeriodType != Period.Custom)
             {
                 minTimestamp = Budget.GetStartOfPeriod(budget.PeriodType, timezone);
-                minTimestamp = Budget.GetEndOfPeriod(budget.PeriodType, timezone);
+                maxTimestamp = Budget.GetEndOfPeriod(budget.PeriodType, timezone);
             }
 
             var query = _db.Expenses

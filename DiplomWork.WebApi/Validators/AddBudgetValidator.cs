@@ -13,7 +13,7 @@ namespace DiplomWork.WebApi.Validators
             RuleFor(x => x.PeriodType).GreaterThanOrEqualTo(0).LessThan(5);
             RuleFor(x => x.Limit.Scale).LessThanOrEqualTo(MAX_MANTISS);
 
-            RuleFor(x => x.EndPeriod).GreaterThanOrEqualTo(x => x.StartPeriod);
+            RuleFor(x => x.EndPeriod).GreaterThan(x => x.StartPeriod).When(x => x.PeriodType == 4);
         }
     }
 }

@@ -22,6 +22,7 @@ namespace DiplomWork.Application.Services
                 Id = Guid.NewGuid(),
                 Limit = addTargetDTO.Limit,
                 Name = addTargetDTO.Name,
+                Amount = addTargetDTO.Amount,
                 OwnerId = userId
             };
 

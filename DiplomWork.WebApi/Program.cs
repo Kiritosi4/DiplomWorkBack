@@ -55,7 +55,7 @@ app.UseCookiePolicy(new CookiePolicyOptions
 app.UseCors(x =>
 {
     x.WithHeaders().AllowAnyHeader();
-    x.WithOrigins( "http://localhost:443", "https://localhost:443", "http://localhost:5173", "https://localhost:5173");
+    x.WithOrigins( "http://localhost:443", "https://localhost:443", "http://localhost:4173", "https://localhost:4173", "http://localhost:5173", "https://localhost:5173");
     x.WithMethods().AllowAnyMethod();
     x.AllowCredentials();
 });
