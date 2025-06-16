@@ -175,24 +175,39 @@ namespace DiplomWork.Application.Services
             }
 
             long realMinTimestamp = profits.First().CreatedAt;
+            var startDateTime = DateTimeOffset.FromUnixTimeSeconds(realMinTimestamp).UtcDateTime;
             long realMaxTimestamp = profits.Last().CreatedAt;
+            var endDateTime = DateTimeOffset.FromUnixTimeSeconds(realMaxTimestamp).UtcDateTime;
+
             long timeSegment = realMaxTimestamp - realMinTimestamp;
             var chartLabelFormat = "dd.MM.yyyy";
+
+            startDateTime = new DateTime(startDateTime.Year, startDateTime.Month, startDateTime.Day, 0, 0, 0);
+            endDateTime = new DateTime(endDateTime.Year, endDateTime.Month, endDateTime.Day, 0, 0, 0);
 
             if (timeSegment > 5184000 && timeSegment <= 61758000)
             {
                 timeSegment = 2592000;
                 chartLabelFormat = "MM.yyyy";
+
+                startDateTime = new DateTime(startDateTime.Year, startDateTime.Month, 1, 0, 0, 0);
+                endDateTime = new DateTime(endDateTime.Year, endDateTime.Month, 1, 0, 0, 0);
             }
             else if (timeSegment > 61758000)
             {
                 timeSegment = 30879000;
                 chartLabelFormat = "yyyy";
+
+                startDateTime = new DateTime(startDateTime.Year, 1, 1, 0, 0, 0);
+                endDateTime = new DateTime(endDateTime.Year, 1, 1, 0, 0, 0);
             }
             else
             {
                 timeSegment = 86400;
             }
+
+            realMinTimestamp = new DateTimeOffset(startDateTime).ToUnixTimeSeconds() - timezoneOffset * 3600;
+            realMaxTimestamp = new DateTimeOffset(endDateTime).ToUnixTimeSeconds() - timezoneOffset * 3600;
 
             foreach (var profit in profits)
             {

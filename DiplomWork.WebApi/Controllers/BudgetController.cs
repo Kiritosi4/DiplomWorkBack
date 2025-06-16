@@ -80,13 +80,13 @@ namespace DiplomWork.WebApi.Controllers
         }
 
         [HttpGet("{id:guid}/expenses")]
-        public async Task<ActionResult<EntityListDTO<Expense>>> GetBudgetExpenses(Guid id, int offset = 0, int limit = 10, int timezone = 0)
+        public async Task<ActionResult<EntityListDTO<Expense>>> GetBudgetExpenses(Guid id, string? orderBy, string? order, int offset = 0, int limit = 10, int timezone = 0)
         {
             var userId = this.GetClaimsUserId(User).Value;
 
             try
             {
-                return Ok(await _budgetService.GetBudgetExpenses(userId, id, offset, Math.Min(10, limit), timezone));
+                return Ok(await _budgetService.GetBudgetExpenses(userId, id, offset, Math.Min(10, limit), orderBy, order, timezone));
             }
             catch (Exception ex)
             {

@@ -3,6 +3,7 @@ using DiplomWork.Models;
 using DiplomWork.Persistance;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq.Expressions;
 
 namespace DiplomWork.Application.Services
 {
@@ -103,7 +104,7 @@ namespace DiplomWork.Application.Services
             };
         }
 
-        public async Task<ExpensesListDTO> GetBudgetExpenses(Guid userId, Guid budgetId, int offset = 0, int limit = 10, int timezone = 0)
+        public async Task<ExpensesListDTO> GetBudgetExpenses(Guid userId, Guid budgetId, int offset = 0, int limit = 10, string orderBy = "CreatedAt", string order = "desc", int timezone = 0)
         {
             var budget = await _db.Budgets.AsNoTracking().FirstOrDefaultAsync(x => x.Id == budgetId && x.OwnerId == userId);
             if (budget == null)
@@ -136,6 +137,20 @@ namespace DiplomWork.Application.Services
             query = query
                 .Skip(offset)
                 .Take(limit);
+
+            // Создание выражения для сортировки
+            var parameter = Expression.Parameter(typeof(Expense), orderBy);
+            var property = Expression.Property(parameter, orderBy);
+            var orderByExpression = Expression.Lambda<Func<Expense, object>>(Expression.Convert(property, typeof(object)), parameter);
+
+            if (order == "desc")
+            {
+                query = query.OrderByDescending(orderByExpression);
+            }
+            else
+            {
+                query = query.OrderBy(orderByExpression);
+            }
 
             var expenses = await query.ToArrayAsync();
             var categoryIds = expenses.Select(x => x.CategoryId).ToArray();
