@@ -104,19 +104,12 @@ namespace DiplomWork.Application.Services
 
         public async Task<ProfitDashboardDTO> GetDashboardData(Guid userId, long minTimestamp, long maxTimestamp, Guid?[] categories = null, int timezoneOffset = 0)
         {
-            // Подготовка временных отрезков
-            var diff = maxTimestamp - minTimestamp;
-
-            var chartSeriesDict = new Dictionary<long, decimal>();
-
             // Распределение расходов по категориям
             var sumByCategoryId = new Dictionary<Guid, decimal>();
             var includedCategories = new List<ProfitCategory>();
 
             // Общая статистика
             decimal totalAmount = 0M;
-            //decimal lastTotalAmount = 0M;
-            //int lastTotalOperations = 0;
 
             var query = _db.Profits.AsNoTracking().Where(x => x.OwnerId == userId);
             if (categories != null && categories.Length > 0)
@@ -135,28 +128,6 @@ namespace DiplomWork.Application.Services
             if (minTimestamp != 0 && maxTimestamp != 0 && maxTimestamp > minTimestamp)
             {
                 query = query.Where(x => x.CreatedAt > minTimestamp && x.CreatedAt < maxTimestamp);
-
-                /*
-                var query2 = query.Where(x => x.CreatedAt >= minTimestamp - diff && x.CreatedAt < maxTimestamp - diff);
-
-                try
-                {
-                    lastTotalAmount = await query2.SumAsync(x => x.Amount);
-                }
-                catch (OverflowException)
-                {
-                    lastTotalAmount = decimal.MaxValue;
-                }
-
-                try
-                {
-                    lastTotalOperations = await query2.CountAsync();
-                }
-                catch (OverflowException)
-                {
-                    lastTotalOperations = int.MaxValue;
-                }
-                */
             }
 
             query = query
@@ -174,62 +145,52 @@ namespace DiplomWork.Application.Services
                 };
             }
 
+            
             long realMinTimestamp = profits.First().CreatedAt;
-            var startDateTime = DateTimeOffset.FromUnixTimeSeconds(realMinTimestamp).UtcDateTime;
             long realMaxTimestamp = profits.Last().CreatedAt;
-            var endDateTime = DateTimeOffset.FromUnixTimeSeconds(realMaxTimestamp).UtcDateTime;
 
             long timeSegment = realMaxTimestamp - realMinTimestamp;
             var chartLabelFormat = "dd.MM.yyyy";
 
-            startDateTime = new DateTime(startDateTime.Year, startDateTime.Month, startDateTime.Day, 0, 0, 0);
-            endDateTime = new DateTime(endDateTime.Year, endDateTime.Month, endDateTime.Day, 0, 0, 0);
-
             if (timeSegment > 5184000 && timeSegment <= 61758000)
             {
-                timeSegment = 2592000;
                 chartLabelFormat = "MM.yyyy";
-
-                startDateTime = new DateTime(startDateTime.Year, startDateTime.Month, 1, 0, 0, 0);
-                endDateTime = new DateTime(endDateTime.Year, endDateTime.Month, 1, 0, 0, 0);
             }
             else if (timeSegment > 61758000)
             {
-                timeSegment = 30879000;
                 chartLabelFormat = "yyyy";
-
-                startDateTime = new DateTime(startDateTime.Year, 1, 1, 0, 0, 0);
-                endDateTime = new DateTime(endDateTime.Year, 1, 1, 0, 0, 0);
-            }
-            else
-            {
-                timeSegment = 86400;
             }
 
-            realMinTimestamp = new DateTimeOffset(startDateTime).ToUnixTimeSeconds() - timezoneOffset * 3600;
-            realMaxTimestamp = new DateTimeOffset(endDateTime).ToUnixTimeSeconds() - timezoneOffset * 3600;
-
+            var chartSeriesDict = new Dictionary<DateTime, decimal>();
             foreach (var profit in profits)
             {
-                // Заполнение по временным отрезкам
-                var segmentId = (profit.CreatedAt - realMinTimestamp) / timeSegment;
-                var mySegment = realMinTimestamp + timeSegment * segmentId;
-                if (chartSeriesDict.ContainsKey(mySegment))
+                // Заполнение по временным отрезкам для гарфика
+                var createdAt = DateTimeOffset
+                .FromUnixTimeSeconds(profit.CreatedAt)
+                .ToOffset(TimeSpan.FromHours(timezoneOffset))
+                .DateTime;
+                
+                DateTime segmentKey;
+                if (chartLabelFormat == "yyyy")
                 {
-                    try
-                    {
-                        chartSeriesDict[mySegment] += profit.Amount;
-                    }
-                    catch (OverflowException)
-                    {
-                        chartSeriesDict[mySegment] = decimal.MaxValue;
-                    }
-
+                    segmentKey = new DateTime(createdAt.Year, 1, 1);
+                } 
+                else if (chartLabelFormat == "MM.yyyy")
+                {
+                    segmentKey = new DateTime(createdAt.Year, createdAt.Month, 1);
                 }
                 else
                 {
-                    chartSeriesDict.Add(mySegment, profit.Amount);
+                    segmentKey = new DateTime(createdAt.Year, createdAt.Month, createdAt.Day);
                 }
+
+                if (!chartSeriesDict.ContainsKey(segmentKey))
+                {
+                    chartSeriesDict[segmentKey] = 0;
+                } 
+
+                chartSeriesDict[segmentKey] += profit.Amount;
+                //=
 
                 // Заполнение распределения по категориям (для круговой диаграммы)
                 var myCategoryId = profit.CategoryId == null ? Guid.Empty : profit.CategoryId;
@@ -248,6 +209,7 @@ namespace DiplomWork.Application.Services
                 {
                     sumByCategoryId.Add(myCategoryId.Value, profit.Amount);
                 }
+                //=
 
                 // Добавление в ответ информации о категории расхода
                 if (profit.Category != null)
@@ -268,10 +230,9 @@ namespace DiplomWork.Application.Services
 
             var chartSegments = chartSeriesDict.Select(kv => new ChartSegment
             {
-                x = DateTimeOffset.FromUnixTimeSeconds(kv.Key + timezoneOffset * 3600).DateTime.ToString(chartLabelFormat),
-                y = kv.Value,
-            })
-            .ToArray();
+                x = kv.Key.ToString(chartLabelFormat),
+                y = kv.Value
+            }).ToArray();
 
             return new ProfitDashboardDTO
             {
