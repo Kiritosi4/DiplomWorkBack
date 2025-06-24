@@ -33,8 +33,8 @@ namespace DiplomWork.Application.Services
                 Name = addBudgetDTO.Name,
                 OwnerId = userId,
                 PeriodType = period,
-                StartPeriod = addBudgetDTO.StartPeriod,
-                EndPeriod = addBudgetDTO.EndPeriod
+                StartPeriod = period == Period.Custom ? addBudgetDTO.StartPeriod : 0,
+                EndPeriod = period == Period.Custom ? addBudgetDTO.EndPeriod : 0
             };
 
             await _db.Budgets.AddAsync(newBudget);
@@ -55,15 +55,17 @@ namespace DiplomWork.Application.Services
                 throw new Exception("Бюджет на выбранную категорию уже существует.");
             }
 
+            var editedBudgetPeriod = (Period)editedBudget.PeriodType;
+
             await _db.Budgets
                 .Where(x => x.Id == budgetId && x.OwnerId == userId)
                 .ExecuteUpdateAsync(x => x
                 .SetProperty(x => x.Name, editedBudget.Name)
                 .SetProperty(x => x.CategoryId, editedBudget.CategoryId)
-                .SetProperty(x => x.PeriodType, (Period)editedBudget.PeriodType)
+                .SetProperty(x => x.PeriodType, editedBudgetPeriod)
                 .SetProperty(x => x.Limit, editedBudget.Limit)
-                .SetProperty(x => x.StartPeriod, editedBudget.StartPeriod)
-                .SetProperty(x => x.EndPeriod, editedBudget.EndPeriod)
+                .SetProperty(x => x.StartPeriod, editedBudgetPeriod == Period.Custom ? editedBudget.StartPeriod : 0)
+                .SetProperty(x => x.EndPeriod, editedBudgetPeriod == Period.Custom ? editedBudget.EndPeriod : 0)
                 );
 
 
